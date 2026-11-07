@@ -11,6 +11,11 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.widget.*
 import android.content.Context
+import android.widget.FrameLayout
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 
 class MainActivity : Activity() {
     private val bg = 0xFF08060F.toInt()
@@ -20,6 +25,7 @@ class MainActivity : Activity() {
     private val violet = 0xFF7418E8.toInt()
     private val muted = 0xFFBDB4CA.toInt()
     private lateinit var root: LinearLayout
+    private var bannerAd: AdView? = null
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
     private fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
@@ -48,10 +54,13 @@ class MainActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
         window.decorView.systemUiVisibility = 0
+        MobileAds.initialize(this) { }
         showHome()
     }
 
     private fun page(title: String, subtitle: String) {
+        bannerAd?.destroy()
+        bannerAd = null
         root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(20), dp(22), dp(28))
@@ -101,13 +110,27 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(dp(12), dp(12), dp(12), dp(14))
         }
+        val adContainer = FrameLayout(this).apply { setBackgroundColor(bg) }
         val screen = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
             addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
             addView(footer, LinearLayout.LayoutParams(-1, -2))
+            if (title != "VOXFLOW Premium") {
+                addView(adContainer, LinearLayout.LayoutParams(-1, -2))
+            }
         }
         setContentView(screen)
+        if (title != "VOXFLOW Premium") {
+            val adView = AdView(this).apply {
+                adUnitId = "ca-app-pub-3940256099942544/9214589741"
+                val widthDp = (resources.displayMetrics.widthPixels / resources.displayMetrics.density).toInt() - 44
+                setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@MainActivity, widthDp.coerceAtLeast(320)))
+            }
+            bannerAd = adView
+            adContainer.addView(adView, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
+            adView.loadAd(AdRequest.Builder().build())
+        }
     }
 
     private fun card(title: String, description: String) {
@@ -366,6 +389,22 @@ class MainActivity : Activity() {
         }
         action("ACCESSIBILITY SETTINGS") { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
         action("BACK") { showHome() }
+    }
+
+    override fun onPause() {
+        bannerAd?.pause()
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        bannerAd?.resume()
+    }
+
+    override fun onDestroy() {
+        bannerAd?.destroy()
+        bannerAd = null
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
