@@ -43,10 +43,13 @@ class DictationService : Service() {
                 val raw=results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
                 val cleaned=clean(raw)
                 if(cleaned.isNotBlank()) {
+                    val clipboard=getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("VOXFLOW",cleaned))
                     val service=VoxFlowAccessibilityService.active
                     if(service==null || !service.insert(cleaned)) {
-                        val clipboard=getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("VOXFLOW",cleaned))
+                        android.os.Handler(mainLooper).post {
+                            android.widget.Toast.makeText(this@DictationService,"Dictation copied. Paste it into your text field.",android.widget.Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
                 stopSelf()
@@ -69,5 +72,5 @@ class DictationService : Service() {
         if(s.last() !in ".!?") s+="."
         return s
     }
-    override fun onDestroy() { recognizer?.destroy(); if(Build.VERSION.SDK_INT>=24) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress("DEPRECATION") stopForeground(true); super.onDestroy() }
+    override fun onDestroy() { recognizer?.destroy(); if(Build.VERSION.SDK_INT>=24) stopForeground(STOP_FOREGROUND_REMOVE) else stopForeground(true); super.onDestroy() }
 }
