@@ -59,8 +59,9 @@ class VoxFlowAccessibilityService : AccessibilityService() {
     fun insert(text:String):Boolean {
         val root=rootInActiveWindow ?: return false
         val node=root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: root
+        val pasted=node.performAction(AccessibilityNodeInfo.ACTION_PASTE)
         val args=android.os.Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,text) }
-        val ok=node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args)
+        val ok=pasted || node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args)
         node.recycle(); root.recycle(); return ok
     }
     override fun onInterrupt() {}
