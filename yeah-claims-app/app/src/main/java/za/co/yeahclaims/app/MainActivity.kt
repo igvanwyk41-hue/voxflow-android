@@ -100,8 +100,7 @@ fun YeahClaimsApp() {
                     Text("YEAH", color = Gold, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 5.sp)
                     Text("CLAIMS", color = Color.White, fontSize = 42.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
                     Spacer(Modifier.height(42.dp))
-                    Text("A clearer way
-forward.", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 40.sp)
+                    Text("A clearer way\nforward.", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 40.sp)
                     Spacer(Modifier.height(12.dp))
                     Text("Tell us what you need help with. Our team can contact you to discuss the next step.", color = Color(0xFFD4DDE8), fontSize = 16.sp, lineHeight = 24.sp)
                     Spacer(Modifier.height(30.dp))
