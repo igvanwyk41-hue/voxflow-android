@@ -14,6 +14,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.core.app.ActivityCompat
@@ -186,7 +187,7 @@ class MainActivity : Activity() {
             setLineSpacing(dp(2).toFloat(), 1f)
         })
 
-        scroll.addView(root, ScrollView.LayoutParams(-1, -2))
+        scroll.addView(root, ViewGroup.LayoutParams(-1, -2))
         setContentView(scroll)
     }
 
