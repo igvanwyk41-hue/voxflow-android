@@ -105,7 +105,7 @@ class MainActivity : Activity() {
     }
 
     private fun showHome() {
-        page("Your voice.\nYour flow.", "Speak naturally. VOXFLOW turns your speech into text in the apps you already use.")
+        page("Your voice.\nYour flow.", "Speak naturally. VOXFLOW turns your speech into polished text in the apps you already use.")
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -120,7 +120,7 @@ class MainActivity : Activity() {
         hero.addView(gap(10))
         hero.addView(text("DICTATE ANYWHERE", 16f, Color.WHITE, true))
         hero.addView(gap(5))
-        hero.addView(text("Tap the floating V when your cursor is in a text field.", 13f, muted).apply {
+        hero.addView(text("Choose VOXFLOW as your keyboard, then tap the purple microphone to dictate.", 13f, muted).apply {
             gravity = Gravity.CENTER
         })
         root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(17) })
