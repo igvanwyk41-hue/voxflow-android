@@ -172,7 +172,18 @@ class MainActivity : Activity() {
         root.addView(actions, actionTop)
 
         val keyboard = actionButton("ACTIVATE VOXFLOW KEYBOARD", true) {
-            startActivity(Intent("android.settings.INPUT_METHOD_SETTINGS"))
+            val settingsIntent = Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS)
+            try {
+                if (settingsIntent.resolveActivity(packageManager) != null) {
+                    startActivity(settingsIntent)
+                } else {
+                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                    Toast.makeText(this, "Open General management, then Keyboard list and default.", Toast.LENGTH_LONG).show()
+                }
+            } catch (_: android.content.ActivityNotFoundException) {
+                startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
+                Toast.makeText(this, "Open General management, then Keyboard list and default.", Toast.LENGTH_LONG).show()
+            }
         }
         root.addView(keyboard, LinearLayout.LayoutParams(-1, dp(54)).apply {
             topMargin = dp(12)
