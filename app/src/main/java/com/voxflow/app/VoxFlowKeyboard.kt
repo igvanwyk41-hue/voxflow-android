@@ -150,6 +150,15 @@ class VoxFlowKeyboard : InputMethodService() {
         }
         s=s.replace(Regex("(?i)\\b(um+|uh+|erm+)\\b[, ]*")," ")
             .replace(Regex("\\s+")," ").trim()
+        val snippets=getSharedPreferences("voxflow",0).getString("snippets","").orEmpty()
+        snippets.lineSequence().mapNotNull { line ->
+            val parts=line.split(" :: ",limit=2)
+            if(parts.size==2) parts[0].trim() to parts[1].trim() else null
+        }.forEach { (shortcut,phrase) ->
+            if(shortcut.isNotBlank() && phrase.isNotBlank()) {
+                s=s.replace(Regex("(?i)\\b"+Regex.escape(shortcut)+"\\b")) { phrase }
+            }
+        }
         if(s.isNotEmpty()) s=s.replaceFirstChar { it.titlecase(Locale.getDefault()) }
         if(s.isNotEmpty() && s.last() !in ".!?") s+="."
         return s
