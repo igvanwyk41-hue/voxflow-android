@@ -1,268 +1,125 @@
 package com.voxflow.app
 
-import android.Manifest
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Bundle
+import android.provider.Settings
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.os.Bundle
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
 import android.widget.*
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import android.content.Context
+import android.content.ClipboardManager
+import android.content.ClipData
 
 class MainActivity : Activity() {
-    private val bg = Color.rgb(10, 8, 20)
-    private val card = Color.rgb(25, 21, 43)
-    private val purple = Color.rgb(151, 91, 255)
-    private val muted = Color.rgb(183, 169, 211)
-    private lateinit var transcript: EditText
-    private lateinit var status: TextView
-    private var recognizer: SpeechRecognizer? = null
+    private val bg = 0xFF0D0A16.toInt()
+    private val panel = 0xFF1B1628.toInt()
+    private val purple = 0xFF9B65FF.toInt()
+    private val muted = 0xFFB7AFC6.toInt()
+    private lateinit var root: LinearLayout
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
-    private fun rounded(color: Int, radius: Int, stroke: Int = 0): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-            if (stroke != 0) setStroke(dp(1), stroke)
-        }
-
-    private fun text(
-        value: String,
-        size: Float,
-        color: Int,
-        bold: Boolean = false
-    ) = TextView(this).apply {
-        text = value
-        textSize = size
-        setTextColor(color)
-        includeFontPadding = true
-        if (bold) setTypeface(typeface, Typeface.BOLD)
+    private fun dp(v:Int)= (v*resources.displayMetrics.density).toInt()
+    private fun shape(c:Int, r:Int)=GradientDrawable().apply { setColor(c); cornerRadius=dp(r).toFloat() }
+    private fun label(s:String, size:Float=14f, color:Int=Color.WHITE, bold:Boolean=false)=TextView(this).apply {
+        text=s; textSize=size; setTextColor(color); includeFontPadding=true
+        if(bold) setTypeface(typeface, Typeface.BOLD)
+    }
+    private fun button(s:String, primary:Boolean=false, click:()->Unit)=TextView(this).apply {
+        text=s; textSize=14f; gravity=Gravity.CENTER; setTextColor(Color.WHITE)
+        typeface=Typeface.DEFAULT_BOLD; background=shape(if(primary) purple else panel,14)
+        setPadding(dp(14),dp(15),dp(14),dp(15)); isClickable=true; setOnClickListener{click()}
     }
 
-    private fun actionButton(value: String, filled: Boolean = false, action: () -> Unit): TextView =
-        TextView(this).apply {
-            text = value
-            textSize = 14f
-            maxLines = 2
-            gravity = Gravity.CENTER
-            includeFontPadding = true
-            setTextColor(Color.WHITE)
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            background = rounded(if (filled) purple else card, 16, if (filled) 0 else 0xFF51436E.toInt())
-            setPadding(dp(8), dp(12), dp(8), dp(12))
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { action() }
-        }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState:Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = bg
-        window.navigationBarColor = bg
-        window.decorView.systemUiVisibility = 0
-        buildScreen()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 40)
-        }
+        window.statusBarColor=bg; window.navigationBarColor=bg
+        showHome()
     }
 
-    private fun buildScreen() {
-        val scroll = ScrollView(this).apply {
-            setFillViewport(true)
-            clipToPadding = false
-            isVerticalScrollBarEnabled = false
-            setBackgroundColor(bg)
-        }
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(22), dp(22), dp(28))
-            setBackgroundColor(bg)
-        }
-
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val brand = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        brand.addView(text("VOXFLOW", 27f, Color.WHITE, true))
-        brand.addView(text("YOUR VOICE. YOUR WORDS.", 10f, muted, true))
-        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
-        val version = text("ANDROID", 10f, muted, true).apply {
-            background = rounded(card, 20)
-            setPadding(dp(12), dp(7), dp(12), dp(7))
-        }
-        header.addView(version)
-        root.addView(header)
-
-        val intro = text("Speak naturally.\nSee your words appear.", 19f, Color.WHITE, true).apply {
-            setPadding(0, dp(28), 0, dp(16))
-            setLineSpacing(dp(2).toFloat(), 1f)
-        }
-        root.addView(intro)
-
-        val mic = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            background = rounded(0xFF211936.toInt(), 22, 0xFF574078.toInt())
-            setPadding(dp(16), dp(20), dp(16), dp(20))
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { startDictation() }
-        }
-        mic.addView(text("🎙", 38f, Color.WHITE).apply { gravity = Gravity.CENTER })
-        mic.addView(text("TAP TO SPEAK", 15f, Color.WHITE, true).apply {
-            gravity = Gravity.CENTER
-            setPadding(0, dp(8), 0, dp(4))
-        })
-        mic.addView(text("Tap once and start talking", 12f, muted).apply { gravity = Gravity.CENTER })
-        val micParams = LinearLayout.LayoutParams(-1, dp(158))
-        root.addView(mic, micParams)
-
-        status = text("●  READY WHEN YOU ARE", 12f, 0xFFBFA5FF.toInt(), true).apply {
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(2), dp(16), dp(2), dp(18))
-        }
-        root.addView(status)
-
-        root.addView(text("YOUR TRANSCRIPTION", 12f, muted, true).apply {
-            setPadding(dp(2), 0, 0, dp(9))
-        })
-        transcript = EditText(this).apply {
-            hint = "Your words will appear here…"
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            setHintTextColor(0xFF9388A8.toInt())
-            setPadding(dp(16), dp(15), dp(16), dp(15))
-            background = rounded(card, 18, 0xFF403451.toInt())
-            minLines = 5
-            gravity = Gravity.TOP or Gravity.START
-            isVerticalScrollBarEnabled = true
-            setLineSpacing(dp(3).toFloat(), 1f)
-            textDirection = View.TEXT_DIRECTION_FIRST_STRONG
-        }
-        root.addView(transcript, LinearLayout.LayoutParams(-1, dp(178)))
-
-        val actions = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER
-        }
-        val actionParams = LinearLayout.LayoutParams(0, dp(54), 1f).apply {
-            marginStart = dp(4); marginEnd = dp(4)
-        }
-        actions.addView(actionButton("✦  Enhance", true) { enhanceText() }, actionParams)
-        actions.addView(actionButton("Copy") { copyText() }, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
-            marginStart = dp(4); marginEnd = dp(4)
-        })
-        actions.addView(actionButton("Clear") { transcript.setText("") }, LinearLayout.LayoutParams(0, dp(54), 1f).apply {
-            marginStart = dp(4); marginEnd = dp(4)
-        })
-        val actionTop = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) }
-        root.addView(actions, actionTop)
-
-        val keyboard = actionButton("ACTIVATE VOXFLOW KEYBOARD", true) {
-            val settingsIntent = Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS)
-            try {
-                if (settingsIntent.resolveActivity(packageManager) != null) {
-                    startActivity(settingsIntent)
-                } else {
-                    startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
-                    Toast.makeText(this, "Open General management, then Keyboard list and default.", Toast.LENGTH_LONG).show()
-                }
-            } catch (_: android.content.ActivityNotFoundException) {
-                startActivity(Intent(android.provider.Settings.ACTION_SETTINGS))
-                Toast.makeText(this, "Open General management, then Keyboard list and default.", Toast.LENGTH_LONG).show()
-            }
-        }
-        root.addView(keyboard, LinearLayout.LayoutParams(-1, dp(54)).apply {
-            topMargin = dp(12)
-        })
-
-        root.addView(text(
-            "Speech recognition uses your Android speech service. Language support depends on your device settings.",
-            11f, 0xFF91869F.toInt()
-        ).apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(8), dp(16), dp(8), dp(4))
-            setLineSpacing(dp(2).toFloat(), 1f)
-        })
-
-        scroll.addView(root, ViewGroup.LayoutParams(-1, -2))
+    private fun shell(title:String, subtitle:String) {
+        root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(22),dp(24),dp(22),dp(24)); setBackgroundColor(bg) }
+        root.addView(label("VOXFLOW",12f,purple,true))
+        root.addView(label(title,29f,Color.WHITE,true).apply { setPadding(0,dp(10),0,dp(4)) })
+        root.addView(label(subtitle,14f,muted).apply { setPadding(0,0,0,dp(22)) })
+        val scroll=ScrollView(this).apply { isFillViewport=true; addView(root) }
         setContentView(scroll)
     }
+    private fun card(title:String, body:String) {
+        val box=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; background=shape(panel,18); setPadding(dp(16),dp(16),dp(16),dp(16)) }
+        box.addView(label(title,16f,Color.WHITE,true))
+        box.addView(label(body,13f,muted).apply { setPadding(0,dp(7),0,0); setLineSpacing(dp(3).toFloat(),1f) })
+        root.addView(box,LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=dp(12) })
+    }
+    private fun action(s:String, primary:Boolean=false, click:()->Unit) {
+        root.addView(button(s,primary,click),LinearLayout.LayoutParams(-1,-2).apply { bottomMargin=dp(10) })
+    }
 
-    private fun startDictation() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            status.text = "Speech recognition is unavailable on this device."
-            return
+    private fun showHome() {
+        shell("Your voice,\nyour words.","Dictate naturally in the apps you already use.")
+        card("FLOATING DICTATION","Open a message or document, tap a text field, then use the VOXFLOW bubble to speak. Your words are inserted where you are typing.")
+        action("SET UP VOXFLOW",true){ showSetup() }
+        card("YOUR FLOW","Your recent dictations and word count will appear here as you use VOXFLOW.")
+        action("DICTIONARY"){ showDictionary() }
+        action("VOICE SNIPPETS"){ showSnippets() }
+        action("SETTINGS"){ showSettings() }
+    }
+    private fun showSetup() {
+        shell("Get started","A few Android permissions let VOXFLOW appear over other apps and insert your speech.")
+        card("1  MICROPHONE","Allow microphone access when Android asks. Dictation requires an internet connection and an installed speech recognition service.")
+        action("ALLOW MICROPHONE",true) {
+            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO),10)
         }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 40)
-            return
+        card("2  DISPLAY OVER OTHER APPS","This lets the floating VOXFLOW bubble appear above your keyboard and other apps.")
+        action("ENABLE FLOATING BUBBLE") {
+            if(android.os.Build.VERSION.SDK_INT>=23) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         }
-        recognizer?.destroy()
-        recognizer = SpeechRecognizer.createSpeechRecognizer(this)
-        recognizer?.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) { status.text = "●  LISTENING…" }
-            override fun onBeginningOfSpeech() { status.text = "●  HEARING YOUR VOICE…" }
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() { status.text = "●  PROCESSING SPEECH…" }
-            override fun onError(error: Int) { status.text = "Didn't catch that. Tap to try again." }
-            override fun onResults(results: Bundle?) {
-                val words = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                if (words.isNotBlank()) {
-                    val old = transcript.text.toString().trim()
-                    transcript.setText(if (old.isEmpty()) words else "$old $words")
-                    status.text = "●  TRANSCRIPTION COMPLETE"
-                } else status.text = "No speech detected"
+        card("3  ACCESSIBILITY SERVICE","This allows VOXFLOW to detect the active text field and insert the finished dictation. It does not replace your keyboard.")
+        action("ENABLE TEXT INSERTION",true){ startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        action("BACK TO HOME"){ showHome() }
+    }
+    private fun showDictionary() {
+        shell("Personal dictionary","Keep names and terms you use often.")
+        val input=EditText(this).apply { hint="Add a word or name"; setTextColor(Color.WHITE); setHintTextColor(muted); background=shape(panel,12); setPadding(dp(14),dp(12),dp(14),dp(12)) }
+        root.addView(input,LinearLayout.LayoutParams(-1,-2))
+        action("SAVE WORD",true) {
+            val words=getSharedPreferences("voxflow",0).getStringSet("dictionary", emptySet())!!.toMutableSet()
+            if(input.text.isNotBlank()) { words.add(input.text.toString().trim()); getSharedPreferences("voxflow",0).edit().putStringSet("dictionary",words).apply(); input.setText(""); Toast.makeText(this,"Word saved",Toast.LENGTH_SHORT).show() }
+        }
+        val words=getSharedPreferences("voxflow",0).getStringSet("dictionary", emptySet())!!.toList()
+        card("SAVED WORDS",if(words.isEmpty()) "Your saved words will appear here." else words.joinToString("\n"))
+        action("BACK"){showHome()}
+    }
+    private fun showSnippets() {
+        shell("Voice snippets","Save phrases you want to insert quickly.")
+        val name=EditText(this).apply { hint="Shortcut name"; setTextColor(Color.WHITE); setHintTextColor(muted); background=shape(panel,12); setPadding(dp(14),dp(12),dp(14),dp(12)) }
+        val phrase=EditText(this).apply { hint="Text to insert"; setTextColor(Color.WHITE); setHintTextColor(muted); background=shape(panel,12); minLines=3; setPadding(dp(14),dp(12),dp(14),dp(12)) }
+        root.addView(name,LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(10)})
+        root.addView(phrase,LinearLayout.LayoutParams(-1,-2))
+        action("SAVE SNIPPET",true) {
+            if(name.text.isNotBlank() && phrase.text.isNotBlank()) {
+                val prefs=getSharedPreferences("voxflow",0); val all=prefs.getString("snippets","")!!
+                prefs.edit().putString("snippets",all+"\n"+name.text.toString()+" :: "+phrase.text.toString()).apply()
+                name.setText(""); phrase.setText(""); Toast.makeText(this,"Snippet saved",Toast.LENGTH_SHORT).show()
             }
-            override fun onPartialResults(partialResults: Bundle?) {
-                val partial = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-                if (!partial.isNullOrBlank()) status.text = partial
-            }
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-ZA")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to VOXFLOW")
         }
-        recognizer?.startListening(intent)
+        card("YOUR SNIPPETS",getSharedPreferences("voxflow",0).getString("snippets","")!!.ifBlank{"No snippets saved yet."})
+        action("BACK"){showHome()}
     }
-
-    private fun enhanceText() {
-        val original = transcript.text.toString().trim()
-        if (original.isEmpty()) { status.text = "Enter or dictate some text first."; return }
-        val cleaned = original.replace(Regex("\\b(um+|uh+|erm+)\\b", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("\\s+"), " ").trim()
-        val formatted = if (cleaned.isNotEmpty()) cleaned.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase() else it.toString()
-        } else cleaned
-        transcript.setText(if (formatted.isNotEmpty() && formatted.last() !in ".!?") "$formatted." else formatted)
-        status.text = "Basic cleanup applied • AI service not connected"
+    private fun showSettings() {
+        shell("Settings","Manage the way VOXFLOW works on your phone.")
+        card("DICTATION LANGUAGE","The first version uses your Android speech recognition language settings. Choose English (South Africa) or another supported language in your device's speech settings.")
+        action("ANDROID SPEECH SETTINGS"){ startActivity(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS)) }
+        card("PERMISSIONS","VOXFLOW needs microphone, display-over-other-apps and its accessibility service for floating dictation and text insertion.")
+        action("OPEN APP PERMISSIONS"){ startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$packageName"))) }
+        action("ACCESSIBILITY SETTINGS"){startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))}
+        action("BACK"){showHome()}
     }
-
-    private fun copyText() {
-        val clip = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        clip.setPrimaryClip(android.content.ClipData.newPlainText("VOXFLOW transcription", transcript.text))
-        status.text = "●  COPIED TO CLIPBOARD"
-    }
-
-    override fun onDestroy() {
-        recognizer?.destroy()
-        super.onDestroy()
+    override fun onRequestPermissionsResult(requestCode:Int, permissions:Array<out String>, grantResults:IntArray) {
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults)
+        if(requestCode==10) Toast.makeText(this,if(grantResults.firstOrNull()==0) "Microphone enabled" else "Microphone permission is required to dictate",Toast.LENGTH_LONG).show()
     }
 }
