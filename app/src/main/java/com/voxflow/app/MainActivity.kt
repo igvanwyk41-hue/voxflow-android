@@ -79,6 +79,18 @@ class MainActivity : Activity() {
             addView(text("SPEAK  •  FLOW  •  CONNECT", 9f, purple, true))
         }
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+        val menu = TextView(this).apply {
+            text = "☰"
+            textSize = 29f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            background = rounded(panel2, 13)
+            setPadding(dp(13), dp(5), dp(13), dp(5))
+            isClickable = true
+            contentDescription = "Open menu"
+            setOnClickListener { showMenu() }
+        }
+        header.addView(menu, LinearLayout.LayoutParams(dp(52), dp(48)))
         root.addView(header)
         root.addView(gap(27))
         root.addView(text(title, 31f, Color.WHITE, true))
@@ -102,6 +114,102 @@ class MainActivity : Activity() {
     private fun action(value: String, primary: Boolean = false, click: () -> Unit) {
         root.addView(button(value, primary, click),
             LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(11) })
+    }
+
+    private fun showMenu() {
+        page("Your account", "Everything you need, in one place.")
+        val signedIn = getSharedPreferences("voxflow", 0).getString("google_email", null)
+        val profileText = if (signedIn.isNullOrBlank()) "Not signed in • Connect your Google account" else signedIn
+        card("PROFILE", profileText)
+        action(if (signedIn.isNullOrBlank()) "CONTINUE WITH GOOGLE" else "ACCOUNT DETAILS", true) { showProfile() }
+        action("DICTATION HISTORY") { showHistory() }
+        action("SAVED TEXT") { showHistory(savedOnly = true) }
+        action("PERSONAL DICTIONARY") { showDictionary() }
+        action("VOICE SNIPPETS") { showSnippets() }
+        action("SETTINGS") { showSettings() }
+        action("PREMIUM MEMBERSHIP") { showPremium() }
+        action("HELP & SUPPORT") {
+            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@voxflow.app"))
+            try { startActivity(intent) } catch (_: Exception) {
+                Toast.makeText(this, "Support email is not configured yet.", Toast.LENGTH_LONG).show()
+            }
+        }
+        action("PRIVACY & SECURITY") {
+            card("YOUR DATA", "Dictation history is stored on this device in this version. Cloud sync and account-based backup will be enabled after secure account sign-in is configured.")
+        }
+        action("BACK TO DICTATION") { showHome() }
+    }
+
+    private fun showProfile() {
+        page("Your profile", "Sign in to keep your VOXFLOW experience connected.")
+        val prefs = getSharedPreferences("voxflow", 0)
+        val email = prefs.getString("google_email", null)
+        if (email.isNullOrBlank()) {
+            card("GOOGLE ACCOUNT", "Google sign-in will connect your profile and, once cloud sync is configured, make your history available on your other devices.")
+            action("CONTINUE WITH GOOGLE", true) {
+                Toast.makeText(this, "Google sign-in needs the VOXFLOW OAuth client configuration before it can be activated.", Toast.LENGTH_LONG).show()
+            }
+            card("GUEST MODE", "You can use VOXFLOW now. Your dictation history is saved locally on this phone.")
+        } else {
+            card("SIGNED IN", email)
+            action("SIGN OUT") {
+                prefs.edit().remove("google_email").apply()
+                showProfile()
+            }
+        }
+        action("BACK TO MENU") { showMenu() }
+    }
+
+    private fun showHistory(savedOnly: Boolean = false) {
+        page(if (savedOnly) "Saved text" else "Dictation history",
+            if (savedOnly) "Your bookmarked dictations." else "Find and reuse your previous dictations.")
+        val prefs = getSharedPreferences("voxflow", 0)
+        val history = try { org.json.JSONArray(prefs.getString("history_json", "[]")) } catch (_: Exception) { org.json.JSONArray() }
+        if (history.length() == 0) {
+            card("NO DICTATIONS YET", "Your completed voice dictations will appear here automatically.")
+        } else {
+            for (i in 0 until history.length()) {
+                val item = history.optJSONObject(i) ?: continue
+                val content = item.optString("text")
+                val stamp = item.optString("date")
+                val saved = item.optBoolean("saved", false)
+                if (savedOnly && !saved) continue
+                val box = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    background = rounded(panel, 16)
+                    setPadding(dp(15), dp(14), dp(15), dp(14))
+                }
+                box.addView(text(stamp, 11f, purple, true))
+                box.addView(gap(6))
+                box.addView(text(content, 15f, Color.WHITE))
+                box.addView(gap(10))
+                val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+                fun small(label: String, click: () -> Unit) = TextView(this).apply {
+                    text = label; textSize = 12f; gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE); background = rounded(panel2, 10)
+                    setPadding(dp(12), dp(10), dp(12), dp(10))
+                    setOnClickListener { click() }
+                }
+                controls.addView(small("COPY") {
+                    val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("VOXFLOW", content))
+                    Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
+                }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(6) })
+                controls.addView(small(if (saved) "SAVED ★" else "SAVE ☆") {
+                    item.put("saved", !saved)
+                    prefs.edit().putString("history_json", history.toString()).apply()
+                    showHistory(savedOnly)
+                }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(6) })
+                controls.addView(small("DELETE") {
+                    history.remove(i)
+                    prefs.edit().putString("history_json", history.toString()).apply()
+                    showHistory(savedOnly)
+                }, LinearLayout.LayoutParams(0, -2, .8f))
+                box.addView(controls)
+                root.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+            }
+        }
+        action("BACK TO MENU") { showMenu() }
     }
 
     private fun showHome() {
