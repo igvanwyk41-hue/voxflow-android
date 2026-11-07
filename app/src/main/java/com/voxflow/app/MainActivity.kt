@@ -136,20 +136,23 @@ class MainActivity : Activity() {
     }
 
     private fun showSetup() {
-        page("Set up VOXFLOW", "Three Android permissions switch on floating dictation.")
-        card("01  MICROPHONE", "Allow microphone access so VOXFLOW can hear your dictation.")
+        page("Set up VOXFLOW", "Activate the VOXFLOW keyboard once. Then choose it whenever you want to dictate.")
+        card("01  MICROPHONE", "VOXFLOW needs microphone access to hear your speech. Allow this first.")
         action("ALLOW MICROPHONE", true) {
             requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 10)
         }
-        card("02  ACCESSIBILITY SERVICE", "This enables the floating V and lets VOXFLOW insert recognised text into the field you are using.")
-        action("ENABLE TEXT INSERTION", true) {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        card("02  ENABLE THE KEYBOARD", "Android will show its installed keyboards. Switch VOXFLOW on in the list. This is a standard Android keyboard service.")
+        action("OPEN KEYBOARD SETTINGS", true) {
+            startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         }
-        card("03  DISPLAY OVER OTHER APPS", "Android may ask for this permission on some devices. The accessibility overlay is used for the floating control.")
-        action("OVERLAY PERMISSION") {
-            if (android.os.Build.VERSION.SDK_INT >= 23) {
-                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
-            }
+        card("03  SELECT VOXFLOW", "Open any app with a text field. Tap the keyboard switcher and select VOXFLOW. Tap the purple microphone and speak. Your words appear directly where your cursor is.")
+        action("CHOOSE VOXFLOW KEYBOARD") {
+            val imm = getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+            imm?.showInputMethodPicker()
+        }
+        card("OPTIONAL FLOATING V", "The floating V shortcut is an optional accessibility feature. The keyboard works without it.")
+        action("OPTIONAL ACCESSIBILITY SETTINGS") {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
         action("BACK TO HOME") { showHome() }
     }
