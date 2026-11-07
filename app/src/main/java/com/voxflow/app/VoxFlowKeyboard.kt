@@ -168,7 +168,7 @@ class VoxFlowKeyboard : InputMethodService() {
         }
 
         try {
-            destroyRecognizer()
+            resetRecognizer(null)
             recognizer = SpeechRecognizer.createSpeechRecognizer(this)
             listening = true
             micButton?.text = "●   LISTENING — TAP TO FINISH"
