@@ -129,8 +129,9 @@ class MainActivity : Activity() {
         card("MAKE IT YOURS", "Add names, places and specialist terms to your personal dictionary. Save frequently used phrases as voice snippets.")
         action("PERSONAL DICTIONARY") { showDictionary() }
         action("VOICE SNIPPETS") { showSnippets() }
+        action("VOXFLOW PREMIUM  •  R49.99 / MONTH") { showPremium() }
         action("SETTINGS") { showSettings() }
-        root.addView(text("VOXFLOW  •  SPEAK. FLOW. CONNECT.", 10f, 0xFF756B83.toInt(), true).apply {
+        root.addView(text("FREE VOICE TYPING  •  OPTIONAL PREMIUM AI", 10f, 0xFF756B83.toInt(), true).apply {
             gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(8))
         })
     }
@@ -209,6 +210,30 @@ class MainActivity : Activity() {
         }
         card("YOUR SNIPPETS", getSharedPreferences("voxflow", 0).getString("snippets", "")!!.ifBlank { "No snippets saved yet." })
         action("BACK") { showHome() }
+    }
+
+    private fun showPremium() {
+        page("VOXFLOW Premium", "More than voice typing. Your personal voice-controlled AI assistant.")
+        val price = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = rounded(0xFF29123A.toInt(), 20)
+            setPadding(dp(18), dp(22), dp(18), dp(22))
+        }
+        price.addView(text("R49.99", 38f, Color.WHITE, true))
+        price.addView(text("PER MONTH", 12f, purple, true))
+        price.addView(gap(8))
+        price.addView(text("Free voice typing stays free. Premium is optional.", 13f, muted).apply { gravity = Gravity.CENTER })
+        root.addView(price, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(17) })
+        card("FEMALE VOICE CONVERSATION", "Talk naturally with VOX. VOX responds aloud using a female voice where a compatible female voice is available on your device. No male voice fallback.")
+        card("PHONE VOICE CONTROL", "Ask VOX to open apps, navigate supported screens, work with contacts and prepare messages. Android permissions and app restrictions still apply.")
+        card("AI DOCUMENT STUDIO", "Create, dictate, rewrite, summarise, translate and review documents. Prepare letters, CVs, reports, proposals, minutes and emails.")
+        card("SMART APP INTEGRATIONS", "Connect supported services and automate multi-step tasks, with confirmation before sensitive actions.")
+        card("SUBSCRIPTION", "Premium checkout is not active yet. Recurring payments will be added through a secure payment provider. Your banking details must never be stored in the app. R49.99 will be charged monthly only after a customer explicitly subscribes and authorises recurring payments.")
+        action("PREMIUM COMING SOON", true) {
+            Toast.makeText(this, "Premium subscriptions are not open yet.", Toast.LENGTH_LONG).show()
+        }
+        action("BACK TO FREE VOICE TYPING") { showHome() }
     }
 
     private fun showSettings() {
