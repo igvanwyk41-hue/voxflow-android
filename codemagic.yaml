@@ -2,23 +2,24 @@ workflows:
   voxflow-android:
     name: VOXFLOW Android Build
     max_build_duration: 60
-    instance_type: mac_mini_m2
+    instance_type: linux_x2
 
     environment:
       java: 17
 
     scripts:
-      - name: Build Android APK
+      - name: Verify Android project
         script: |
-          echo "Checking Android project..."
-          ls -la
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew assembleDebug
-          else
-            echo "Gradle wrapper not found"
-            exit 1
-          fi
+          set -e
+          test -f settings.gradle.kts
+          test -f app/build.gradle.kts
+          test -f app/src/main/AndroidManifest.xml
+          gradle --version
+
+      - name: Build VOXFLOW debug APK
+        script: |
+          set -e
+          gradle --no-daemon assembleDebug
 
     artifacts:
-      - "**/build/outputs/apk/debug/*.apk"
+      - app/build/outputs/apk/debug/*.apk
