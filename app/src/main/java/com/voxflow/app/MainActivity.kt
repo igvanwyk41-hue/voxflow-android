@@ -97,7 +97,17 @@ class MainActivity : Activity() {
         root.addView(gap(7))
         root.addView(text(subtitle, 15f, muted))
         root.addView(gap(24))
-        setContentView(scroll)
+        val footer = text("Created and designed by Ian van Wyk", 11f, 0xFF8F829F.toInt()).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(14))
+        }
+        val screen = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(bg)
+            addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+            addView(footer, LinearLayout.LayoutParams(-1, -2))
+        }
+        setContentView(screen)
     }
 
     private fun card(title: String, description: String) {
