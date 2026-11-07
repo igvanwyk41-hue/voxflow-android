@@ -212,8 +212,19 @@ class VoxFlowKeyboard : InputMethodService() {
 
                     if (finalText.isNotBlank()) {
                         val inserted = currentInputConnection?.commitText(finalText, 1) == true
-                        status?.text = if (inserted) "Inserted. Ready for your next thought." else
-                            "Text recognised, but the text field is no longer active."
+                        try {
+                            val prefs = getSharedPreferences("voxflow", MODE_PRIVATE)
+                            val history = org.json.JSONArray(prefs.getString("history_json", "[]"))
+                            val entry = org.json.JSONObject()
+                                .put("text", finalText)
+                                .put("date", java.text.SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.getDefault()).format(java.util.Date()))
+                                .put("saved", false)
+                            val updated = org.json.JSONArray().put(entry)
+                            for (i in 0 until minOf(history.length(), 99)) updated.put(history.getJSONObject(i))
+                            prefs.edit().putString("history_json", updated.toString()).apply()
+                        } catch (_: Exception) { }
+                        status?.text = if (inserted) "Inserted and saved to your history." else
+                            "Text recognised and saved to history."
                     } else {
                         status?.text = "No words recognised. Try again."
                     }
