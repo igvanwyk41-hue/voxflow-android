@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voxflow_accessibility_description">Shows the VOXFLOW dictation bubble in text fields and inserts the speech you dictate.</string>
+</resources>
